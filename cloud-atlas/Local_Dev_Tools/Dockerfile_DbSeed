@@ -1,0 +1,9 @@
+# Stage 1
+FROM cloud-atlas-migration-builder as ca-migration-builder
+COPY . /migrations
+
+# Stage 2
+FROM mcr.microsoft.com/mssql-tools
+COPY --from=ca-migration-builder /migrations /migrations
+CMD /bin/sh -c "echo bananas 1 && sleep 60 && /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P YourStrong!Passw0rd -Q \"IF DB_ID('cloud-atlas') IS NULL CREATE DATABASE [cloud-atlas];\" && echo bananas 2 && sleep 60 && /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P YourStrong!Passw0rd -d cloud-atlas -i /migrations/migrations.sql"
+

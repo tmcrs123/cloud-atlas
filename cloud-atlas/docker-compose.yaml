@@ -1,15 +1,58 @@
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: cloud-atlas-local
+    container_name: cloud-atlas-local-database
     ports:
       - "1433:1433"
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "YourStrong!Passw0rd"
-    volumes:
-      - sql_data:/var/opt/mssql
+      SA_PASSWORD: "${SQL_PASSWORD}"
+    networks:
+      - cloud-atlas-local-network
+    # volumes:
+    #   - sql_data:/var/opt/mssql
     restart: unless-stopped
 
-volumes:
-  sql_data:
+  migration-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile_Migrations
+    image: cloud-atlas-migration-builder
+    networks:
+      - cloud-atlas-local-network
+    depends_on:
+      - sqlserver
+
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile_API
+  #   ports:
+  #     - "5001:8080"
+  #   depends_on:
+  #     - sqlserver
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #   networks:
+  #     - cloud-atlas-local-network
+
+  db_seed:
+    build:
+        context: .
+        dockerfile: ./Local_Dev_Tools/Dockerfile_DbSeed
+    depends_on:
+      - sqlserver
+      - migration-builder   
+    networks:
+      - cloud-atlas-local-network
+    # volumes:
+    #    - ./Local_Dev_Tools/init.sh:/tmp/init.sh
+    #    - ./Local_Dev_Tools/seed.sql:/tmp/seed.sql
+    #    - ./Migrations:/tmp/migrations
+    # command: /bin/bash ./tmp/init.sh
+
+# volumes:
+#   sql_data:
+
+networks:
+  cloud-atlas-local-network:
