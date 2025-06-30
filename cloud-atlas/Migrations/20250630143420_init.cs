@@ -52,6 +52,8 @@ namespace cloud_atlas.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Latitude = table.Column<double>(type: "float", nullable: false),
+                    Longitude = table.Column<double>(type: "float", nullable: false),
                     AtlasId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     PhotosLinkId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },

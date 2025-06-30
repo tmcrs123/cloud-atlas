@@ -1,6 +1,6 @@
 ﻿namespace cloud_atlas.Entities.Models
 {
-    public class Photo
+    public class PhotoData
     {
         public Guid Id { get; set; }
         public string Legend { get; set; }

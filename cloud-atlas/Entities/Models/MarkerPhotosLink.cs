@@ -3,5 +3,6 @@
     public class MarkerPhotosLink
     {
         public Guid Id { get; set; }
+        public Guid MarkerId { get; set; }
     }
 }

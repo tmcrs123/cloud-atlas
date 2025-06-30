@@ -14,6 +14,9 @@ namespace cloud_atlas
             base.OnModelCreating(builder);
             builder.HasDefaultContainer("MarkerPhotos");
             builder.Entity<MarkerPhotos>().HasPartitionKey(mp => mp.MarkerId);
+            builder.Entity<MarkerPhotos>()
+                .Property(mp => mp.Id)
+                .ValueGeneratedOnAdd();
         }
 
 

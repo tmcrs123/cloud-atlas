@@ -31,7 +31,7 @@ public class AtlasController : BaseController
         {
             Title = atlas.Title,
             Markers = new List<Marker>(),
-            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = new Guid("E5B31139-A786-4F84-3027-08DDB7D3F2CD"), IsOwner = true } }
+            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = atlas.UserId, IsOwner = true } }
         };
 
         sqlDbContext.Add(entity);

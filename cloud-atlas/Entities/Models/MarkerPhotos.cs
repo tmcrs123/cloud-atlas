@@ -3,8 +3,8 @@
     public class MarkerPhotos
     {
         public Guid Id { get; set; }
-        public Guid MapId { get; set; }
+        public Guid AtlasId { get; set; }
         public Guid MarkerId { get; set; }
-        public List<Photo> Photos { get; set; }
+        public List<PhotoData> Photos { get; set; }
     }
 }

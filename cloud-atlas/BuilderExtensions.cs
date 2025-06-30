@@ -49,12 +49,12 @@ namespace cloud_atlas
 
             builder.Services.AddDbContext<SqlDbContext>(options =>
             {
-                options.UseSqlServer(sqlDbSettings?.ConnectionString);
+                options.UseSqlServer(sqlDbSettings?.ConnectionString, sqlServer => sqlServer.UseNetTopologySuite());
             });
 
             builder.Services.AddDbContext<CosmosDbContext>(options =>
             {
-                options.UseCosmos(cosmosDbSettings.URL,cosmosDbSettings.Key,databaseName: cosmosDbSettings.DatabaseName);
+                options.UseCosmos(cosmosDbSettings.URL, cosmosDbSettings.Key, databaseName: cosmosDbSettings.DatabaseName);
             });
         }
 

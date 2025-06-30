@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using cloud_atlas;
 
@@ -11,9 +12,11 @@ using cloud_atlas;
 namespace cloud_atlas.Migrations
 {
     [DbContext(typeof(SqlDbContext))]
-    partial class SqlDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250630143420_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,7 @@ namespace cloud_atlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Atlases", (string)null);
+                    b.ToTable("Atlases");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.AtlasUser", b =>
@@ -53,7 +56,7 @@ namespace cloud_atlas.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AtlasUsers", (string)null);
+                    b.ToTable("AtlasUsers");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.Marker", b =>
@@ -71,6 +74,9 @@ namespace cloud_atlas.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
 
+                    b.Property<Guid>("PhotosLinkId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -80,7 +86,9 @@ namespace cloud_atlas.Migrations
 
                     b.HasIndex("AtlasId");
 
-                    b.ToTable("Markers", (string)null);
+                    b.HasIndex("PhotosLinkId");
+
+                    b.ToTable("Markers");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.MarkerPhotosLink", b =>
@@ -89,15 +97,9 @@ namespace cloud_atlas.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("MarkerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("MarkerId")
-                        .IsUnique();
-
-                    b.ToTable("PhotoLinks", (string)null);
+                    b.ToTable("PhotoDetailsLinks");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.User", b =>
@@ -112,7 +114,7 @@ namespace cloud_atlas.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.AtlasUser", b =>
@@ -142,16 +144,15 @@ namespace cloud_atlas.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Atlas");
-                });
-
-            modelBuilder.Entity("cloud_atlas.Entities.Models.MarkerPhotosLink", b =>
-                {
-                    b.HasOne("cloud_atlas.Entities.Models.Marker", null)
-                        .WithOne("PhotosLink")
-                        .HasForeignKey("cloud_atlas.Entities.Models.MarkerPhotosLink", "MarkerId")
+                    b.HasOne("cloud_atlas.Entities.Models.MarkerPhotosLink", "PhotosLink")
+                        .WithMany()
+                        .HasForeignKey("PhotosLinkId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Atlas");
+
+                    b.Navigation("PhotosLink");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.Atlas", b =>
@@ -159,12 +160,6 @@ namespace cloud_atlas.Migrations
                     b.Navigation("AtlasUsers");
 
                     b.Navigation("Markers");
-                });
-
-            modelBuilder.Entity("cloud_atlas.Entities.Models.Marker", b =>
-                {
-                    b.Navigation("PhotosLink")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.User", b =>
