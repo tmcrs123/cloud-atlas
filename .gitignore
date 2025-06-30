@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+cloud-atlas/appsettings.Development.json
+cloud-atlas/appsettings.json

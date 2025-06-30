@@ -1,0 +1,56 @@
+services:
+    sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        container_name: cloud-atlas-local-database
+        ports:
+            - "1433:1433"
+        environment:
+            ACCEPT_EULA: "Y"
+            SA_PASSWORD: "${SQL_PASSWORD}"
+        networks:
+            - cloud-atlas-local-network
+        restart: unless-stopped
+
+    migration-builder:
+        build:
+          context: .
+          dockerfile: ./Infrastructure/Dockerfile_Migrations
+        image: cloud-atlas-migration-builder
+        networks:
+          - cloud-atlas-local-network
+        depends_on:
+          - sqlserver
+
+    db_seed:
+        build:
+            context: .
+            dockerfile: ./Infrastructure/Dockerfile_DbSeed
+        environment:
+          - SQL_PASSWORD=${SQL_PASSWORD}
+          - SQL_USER=${SQL_USER}
+          - SQL_HOST=${SQL_HOST}
+        depends_on:
+          - sqlserver
+          - migration-builder   
+        networks:
+          - cloud-atlas-local-network
+        volumes:
+           - ./Migrations/seed.sql:/tmp/seed.sql
+           - ./Migrations:/tmp/migrations
+
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Infrastructure/Dockerfile_API
+  #   ports:
+  #     - "5001:8080"
+  #   depends_on:
+  #     - sqlserver
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #   networks:
+  #     - cloud-atlas-local-network
+
+  
+networks:
+  cloud-atlas-local-network:
