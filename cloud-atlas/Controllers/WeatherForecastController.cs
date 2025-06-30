@@ -1,3 +1,4 @@
+using cloud_atlas.Entities.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace cloud_atlas.Controllers
@@ -6,28 +7,59 @@ namespace cloud_atlas.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+        private readonly CosmosDbContext CosmosDbContext;
 
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(CosmosDbContext cosmosDb)
         {
-            _logger = logger;
+            CosmosDbContext = cosmosDb;
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpPost]
+        public async Task<IActionResult> AddPhotos()
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            try
             {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+
+            await CosmosDbContext.Database.EnsureCreatedAsync();
+
+            CosmosDbContext.Add(new MarkerPhotos
+            {
+                Id = new Guid(),
+                MapId = new Guid(),
+                MarkerId = new Guid(),
+                Photos = new List<Photo>
+                {
+                    new Photo
+                    {
+                        Id = Guid.NewGuid(),
+                        Legend = "Sunset over the mountains",
+                        URL = "https://example.com/photos/sunset.jpg"
+                    },
+                    new Photo
+                    {
+                        Id = Guid.NewGuid(),
+                        Legend = "Cloudy sky above the lake",
+                        URL = "https://example.com/photos/cloudy-lake.jpg"
+                    },
+                    new Photo
+                    {
+                        Id = Guid.NewGuid(),
+                        Legend = "Rainy day in the city",
+                        URL = "https://example.com/photos/rainy-city.jpg"
+                    }
+                }
+            });
+
+                await CosmosDbContext.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
     }
 }
+
+

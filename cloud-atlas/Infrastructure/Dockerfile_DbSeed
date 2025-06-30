@@ -1,0 +1,11 @@
+# Stage 1
+FROM cloud-atlas-migration-builder AS ca-migration-builder
+COPY . /migrations
+
+# Stage 2
+FROM mcr.microsoft.com/mssql-tools
+COPY --from=ca-migration-builder /migrations/Infrastructure/run-migrations.sh /migrations/
+COPY --from=ca-migration-builder /migrations/Infrastructure/seed.sql /migrations/
+COPY --from=ca-migration-builder /migrations/migrations.sql /migrations/
+RUN chmod +x /migrations/run-migrations.sh
+CMD /bin/sh -c "/migrations/run-migrations.sh"

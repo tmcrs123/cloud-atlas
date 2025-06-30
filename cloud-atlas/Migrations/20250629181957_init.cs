@@ -24,6 +24,17 @@ namespace cloud_atlas.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PhotoDetailsLinks",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PhotoDetailsLinks", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -41,7 +52,8 @@ namespace cloud_atlas.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    AtlasId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    AtlasId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PhotosLinkId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,6 +62,12 @@ namespace cloud_atlas.Migrations
                         name: "FK_Markers_Atlases_AtlasId",
                         column: x => x.AtlasId,
                         principalTable: "Atlases",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Markers_PhotoDetailsLinks_PhotosLinkId",
+                        column: x => x.PhotosLinkId,
+                        principalTable: "PhotoDetailsLinks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -79,25 +97,6 @@ namespace cloud_atlas.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "PhotoDetails",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    URLs = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    MarkerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PhotoDetails", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_PhotoDetails_Markers_MarkerId",
-                        column: x => x.MarkerId,
-                        principalTable: "Markers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_AtlasUsers_UserId",
                 table: "AtlasUsers",
@@ -109,9 +108,9 @@ namespace cloud_atlas.Migrations
                 column: "AtlasId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PhotoDetails_MarkerId",
-                table: "PhotoDetails",
-                column: "MarkerId");
+                name: "IX_Markers_PhotosLinkId",
+                table: "Markers",
+                column: "PhotosLinkId");
         }
 
         /// <inheritdoc />
@@ -121,16 +120,16 @@ namespace cloud_atlas.Migrations
                 name: "AtlasUsers");
 
             migrationBuilder.DropTable(
-                name: "PhotoDetails");
+                name: "Markers");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Markers");
+                name: "Atlases");
 
             migrationBuilder.DropTable(
-                name: "Atlases");
+                name: "PhotoDetailsLinks");
         }
     }
 }

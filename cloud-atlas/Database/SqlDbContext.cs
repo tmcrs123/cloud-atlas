@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace cloud_atlas
 {
-    public class ApplicationDbContext : DbContext
+    public class SqlDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions options) : base(options)
+        public SqlDbContext(DbContextOptions<SqlDbContext> options) : base(options)
         {
             
         }
@@ -19,9 +19,6 @@ namespace cloud_atlas
             // Marker
             builder.Entity<Marker>().Property(m => m.Title).HasMaxLength(30).IsRequired(required: true);
 
-            // Photo
-            builder.Entity<PhotoDetails>().Property(p => p.URLs).IsRequired(required: true);
-
             //AtlasUsers
             builder.Entity<AtlasUsers>().HasKey(au => new { au.AtlasId, au.UserId });
         }
@@ -30,7 +27,7 @@ namespace cloud_atlas
         public DbSet<Atlas> Atlases { get; set; }
         public DbSet<AtlasUsers> AtlasUsers { get; set; }
         public DbSet<Marker> Markers { get; set; }
-        public DbSet<PhotoDetails> PhotoDetails { get; set; }
+        public DbSet<MarkerPhotosLink> PhotoDetailsLinks { get; set; }
 
     };
 

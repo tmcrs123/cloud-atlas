@@ -10,8 +10,8 @@ using cloud_atlas;
 
 namespace cloud_atlas.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(SqlDbContext))]
+    partial class SqlDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -65,6 +65,9 @@ namespace cloud_atlas.Migrations
                     b.Property<Guid>("AtlasId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("PhotosLinkId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -74,27 +77,20 @@ namespace cloud_atlas.Migrations
 
                     b.HasIndex("AtlasId");
 
+                    b.HasIndex("PhotosLinkId");
+
                     b.ToTable("Markers");
                 });
 
-            modelBuilder.Entity("cloud_atlas.Entities.Models.PhotoDetails", b =>
+            modelBuilder.Entity("cloud_atlas.Entities.Models.MarkerPhotosLink", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("MarkerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("URLs")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("MarkerId");
-
-                    b.ToTable("PhotoDetails");
+                    b.ToTable("PhotoDetailsLinks");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.User", b =>
@@ -135,18 +131,15 @@ namespace cloud_atlas.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Atlas");
-                });
-
-            modelBuilder.Entity("cloud_atlas.Entities.Models.PhotoDetails", b =>
-                {
-                    b.HasOne("cloud_atlas.Entities.Models.Marker", "Marker")
-                        .WithMany("Photos")
-                        .HasForeignKey("MarkerId")
+                    b.HasOne("cloud_atlas.Entities.Models.MarkerPhotosLink", "PhotosLink")
+                        .WithMany()
+                        .HasForeignKey("PhotosLinkId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Marker");
+                    b.Navigation("Atlas");
+
+                    b.Navigation("PhotosLink");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.Atlas", b =>
@@ -154,11 +147,6 @@ namespace cloud_atlas.Migrations
                     b.Navigation("AtlasUsers");
 
                     b.Navigation("Markers");
-                });
-
-            modelBuilder.Entity("cloud_atlas.Entities.Models.Marker", b =>
-                {
-                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("cloud_atlas.Entities.Models.User", b =>

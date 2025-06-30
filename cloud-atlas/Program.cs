@@ -1,5 +1,6 @@
-
+﻿
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace cloud_atlas
 {
@@ -10,16 +11,15 @@ namespace cloud_atlas
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.ConfigureGlobalErrorHandling();
+            builder.ConfigureResponseCompression();
+            builder.ConfigureCors();
+            builder.ConfigureDatabase();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            {
-                options.UseSqlServer("name=DefaultConnection");
-            });
 
             var app = builder.Build();
 

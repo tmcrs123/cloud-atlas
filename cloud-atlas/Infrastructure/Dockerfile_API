@@ -16,5 +16,4 @@ RUN dotnet publish "cloud-atlas.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-#COPY --from=migrations /app/migrations ./migrations
 ENTRYPOINT ["dotnet", "cloud-atlas.dll"]
