@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class MarkerController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
-    public MarkerController(SqlDbContext sqlDbContext)
+    private readonly CosmosDbContext cosmosDbContext;
+    public MarkerController(SqlDbContext sqlDbContext, CosmosDbContext cosmosDbContext)
     {
         this.sqlDbContext = sqlDbContext;
+        this.cosmosDbContext = cosmosDbContext;
     }
 
     [HttpGet("markers")]
@@ -85,6 +87,13 @@ public class MarkerController : BaseController
         sqlDbContext.Markers.Remove(marker);
 
         await sqlDbContext.SaveChangesAsync();
+
+        var markerPhotosToRemove = cosmosDbContext.MarkerPhotos
+            .Where(mp => mp.AtlasId == dto.MarkerId);
+
+        cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+
+        await cosmosDbContext.SaveChangesAsync();
 
         return Ok();
     }

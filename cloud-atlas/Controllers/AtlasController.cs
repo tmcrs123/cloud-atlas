@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class AtlasController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
-    public AtlasController(SqlDbContext sqlDbContext)
+    private readonly CosmosDbContext cosmosDbContext;
+    public AtlasController(SqlDbContext sqlDbContext, CosmosDbContext cosmosDbContext)
     {
         this.sqlDbContext = sqlDbContext;
+        this.cosmosDbContext = cosmosDbContext;
     }
 
     [HttpGet]
@@ -54,6 +56,13 @@ public class AtlasController : BaseController
         sqlDbContext.Atlases.Remove(atlasUser.Atlas);
 
         await sqlDbContext.SaveChangesAsync();
+
+        var markerPhotosToRemove = cosmosDbContext.MarkerPhotos
+            .Where(mp => mp.AtlasId == dto.AtlasId);
+
+        cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+
+        await cosmosDbContext.SaveChangesAsync();
 
         return Ok();
     }
