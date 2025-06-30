@@ -4,6 +4,6 @@
     {
         public Guid Id { get; set; }
         public required string Name { get; set; }
-        public List<AtlasUsers> AtlasUsers { get; set; }
+        public List<AtlasUser> AtlasUsers { get; set; }
     }
 }
