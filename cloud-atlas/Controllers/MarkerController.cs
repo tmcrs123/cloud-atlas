@@ -28,7 +28,7 @@ public class MarkerController : BaseController
     {
         var link = await sqlDbContext.PhotoLinks
         .Where(m => m.MarkerId == markerId)
-        .Select(pl => pl.Id)
+        .Select(pl => pl.PhotoLinkId)
         .FirstOrDefaultAsync();
 
         return Ok(link);
@@ -55,14 +55,14 @@ public class MarkerController : BaseController
             AtlasId = m.AtlasId,
             Latitude = m.Latitude,
             Longitude = m.Longitude,
-            PhotosLink = new MarkerPhotosLink()
+            MarkerPhotosLink = new MarkerPhotosLink()
         }).ToList();
 
         sqlDbContext.Markers.AddRange(entities);
 
         await sqlDbContext.SaveChangesAsync();
 
-        return Ok(entities.Select(e => new { Id = e.Id, PhotosLink = e.PhotosLink.Id }));
+        return Ok(entities.Select(e => new { Id = e.Id, PhotosLink = e.MarkerPhotosLink.PhotoLinkId }));
     }
 
     [HttpDelete]
@@ -88,10 +88,11 @@ public class MarkerController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        var markerPhotosToRemove = cosmosDbContext.MarkerPhotos
-            .Where(mp => mp.AtlasId == dto.MarkerId);
+        var markerToRemove = await cosmosDbContext.MarkerPhotos.FirstOrDefaultAsync(mp => mp.MarkerId == dto.MarkerId);
 
-        cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+        if (markerToRemove is null) return Ok();
+
+        cosmosDbContext.MarkerPhotos.Remove(markerToRemove);
 
         await cosmosDbContext.SaveChangesAsync();
 

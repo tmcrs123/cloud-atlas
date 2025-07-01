@@ -57,8 +57,8 @@ public class AtlasController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        var markerPhotosToRemove = cosmosDbContext.MarkerPhotos
-            .Where(mp => mp.AtlasId == dto.AtlasId);
+        var markerPhotosToRemove = await cosmosDbContext.MarkerPhotos
+            .Where(mp => mp.AtlasId == dto.AtlasId).ToListAsync();
 
         cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
 
@@ -82,5 +82,14 @@ public class AtlasController : BaseController
         await sqlDbContext.SaveChangesAsync();
 
         return Ok(atlas);
+    }
+
+    [HttpPost("add-user")]
+    public async Task<IActionResult> AddUserToAtlas([FromBody] AddUserToAtlasDto dto)
+    {
+        sqlDbContext.AtlasUsers.Add(new AtlasUser() { AtlasId = dto.AtlasId, UserId = dto.UserId, IsOwner = false });
+        await sqlDbContext.SaveChangesAsync();
+
+        return Ok();
     }
 }

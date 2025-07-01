@@ -24,7 +24,7 @@ namespace cloud_atlas.Controllers
 
                 CosmosDbContext.Add(new MarkerPhotos
                 {
-                    Id = new Guid(),
+                    PhotoLinkId = new Guid(),
                     AtlasId = new Guid(),
                     MarkerId = new Guid(),
                     Photos = new List<PhotoData>

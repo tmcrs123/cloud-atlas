@@ -26,9 +26,11 @@ namespace cloud_atlas
             builder.Entity<Marker>().Property(m => m.Title).HasMaxLength(30).IsRequired(required: true);
 
             builder.Entity<Marker>()
-            .HasOne(m => m.PhotosLink)
+            .HasOne(m => m.MarkerPhotosLink)
             .WithOne()
             .HasForeignKey<MarkerPhotosLink>(pl => pl.MarkerId);
+
+            builder.Entity<MarkerPhotosLink>().HasKey(mpl => mpl.PhotoLinkId);
 
             //AtlasUsers
             builder.Entity<AtlasUser>().HasKey(au => new { au.AtlasId, au.UserId });

@@ -13,7 +13,7 @@ public class UserController : BaseController
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto user)
     {
-        var entity = new User() { Name = "Tiago" };
+        var entity = new User() { Name = user.Name };
         sqlDbContext.Add(entity);
         await sqlDbContext.SaveChangesAsync();
         return Ok(new { Id = entity.Id });
