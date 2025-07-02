@@ -15,11 +15,14 @@ namespace cloud_atlas
             builder.ConfigureResponseCompression();
             builder.ConfigureCors();
             builder.ConfigureDatabase();
+            builder.ConfigureAuthentication();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddAuthentication();
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
@@ -32,8 +35,8 @@ namespace cloud_atlas
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
-
+            app.UseAuthentication();
+            app.UseCors("AllowAll");
 
             app.MapControllers();
 

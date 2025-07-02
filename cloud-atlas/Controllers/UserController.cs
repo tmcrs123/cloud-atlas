@@ -1,5 +1,6 @@
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 public class UserController : BaseController
@@ -13,9 +14,17 @@ public class UserController : BaseController
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto user)
     {
-        var entity = new User() { Name = "Tiago" };
+        var entity = new User() { Name = user.Name };
         sqlDbContext.Add(entity);
         await sqlDbContext.SaveChangesAsync();
         return Ok(new { Id = entity.Id });
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> Validate()
+    {
+        System.Console.WriteLine(Request);
+        return Ok();
     }
 }

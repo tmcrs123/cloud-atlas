@@ -20,35 +20,35 @@ namespace cloud_atlas.Controllers
             try
             {
 
-            await CosmosDbContext.Database.EnsureCreatedAsync();
+                await CosmosDbContext.Database.EnsureCreatedAsync();
 
-            CosmosDbContext.Add(new MarkerPhotos
-            {
-                Id = new Guid(),
-                MapId = new Guid(),
-                MarkerId = new Guid(),
-                Photos = new List<Photo>
+                CosmosDbContext.Add(new MarkerPhotos
                 {
-                    new Photo
+                    PhotoLinkId = new Guid(),
+                    AtlasId = new Guid(),
+                    MarkerId = new Guid(),
+                    Photos = new List<PhotoData>
+                {
+                    new PhotoData
                     {
                         Id = Guid.NewGuid(),
                         Legend = "Sunset over the mountains",
                         URL = "https://example.com/photos/sunset.jpg"
                     },
-                    new Photo
+                    new PhotoData
                     {
                         Id = Guid.NewGuid(),
                         Legend = "Cloudy sky above the lake",
                         URL = "https://example.com/photos/cloudy-lake.jpg"
                     },
-                    new Photo
+                    new PhotoData
                     {
                         Id = Guid.NewGuid(),
                         Legend = "Rainy day in the city",
                         URL = "https://example.com/photos/rainy-city.jpg"
                     }
                 }
-            });
+                });
 
                 await CosmosDbContext.SaveChangesAsync();
                 return Ok();

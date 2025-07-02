@@ -34,9 +34,9 @@ services:
           - migration-builder   
         networks:
           - cloud-atlas-local-network
-        volumes:
-           - ./Migrations/seed.sql:/tmp/seed.sql
-           - ./Migrations:/tmp/migrations
+        # volumes:
+        #    - ./Migrations/seed.sql:/tmp/seed.sql
+        #    - ./Migrations:/tmp/migrations
 
   # api:
   #   build:

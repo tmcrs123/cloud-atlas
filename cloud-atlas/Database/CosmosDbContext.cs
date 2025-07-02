@@ -13,13 +13,10 @@ namespace cloud_atlas
         {
             base.OnModelCreating(builder);
             builder.HasDefaultContainer("MarkerPhotos");
+            builder.Entity<MarkerPhotos>().HasKey(mp => mp.PhotoLinkId);
             builder.Entity<MarkerPhotos>().HasPartitionKey(mp => mp.MarkerId);
         }
 
-
-
         public DbSet<MarkerPhotos> MarkerPhotos { get; set; }
-
     };
-
 }

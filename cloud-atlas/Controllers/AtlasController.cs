@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class AtlasController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
-    public AtlasController(SqlDbContext sqlDbContext)
+    private readonly CosmosDbContext cosmosDbContext;
+    public AtlasController(SqlDbContext sqlDbContext, CosmosDbContext cosmosDbContext)
     {
         this.sqlDbContext = sqlDbContext;
+        this.cosmosDbContext = cosmosDbContext;
     }
 
     [HttpGet]
@@ -31,7 +33,7 @@ public class AtlasController : BaseController
         {
             Title = atlas.Title,
             Markers = new List<Marker>(),
-            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = new Guid("E5B31139-A786-4F84-3027-08DDB7D3F2CD"), IsOwner = true } }
+            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = atlas.UserId, IsOwner = true } }
         };
 
         sqlDbContext.Add(entity);
@@ -55,6 +57,13 @@ public class AtlasController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
+        var markerPhotosToRemove = await cosmosDbContext.MarkerPhotos
+            .Where(mp => mp.AtlasId == dto.AtlasId).ToListAsync();
+
+        cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+
+        await cosmosDbContext.SaveChangesAsync();
+
         return Ok();
     }
 
@@ -73,5 +82,14 @@ public class AtlasController : BaseController
         await sqlDbContext.SaveChangesAsync();
 
         return Ok(atlas);
+    }
+
+    [HttpPost("add-user")]
+    public async Task<IActionResult> AddUserToAtlas([FromBody] AddUserToAtlasDto dto)
+    {
+        sqlDbContext.AtlasUsers.Add(new AtlasUser() { AtlasId = dto.AtlasId, UserId = dto.UserId, IsOwner = false });
+        await sqlDbContext.SaveChangesAsync();
+
+        return Ok();
     }
 }

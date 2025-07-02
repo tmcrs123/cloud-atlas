@@ -1,10 +1,11 @@
 ﻿namespace cloud_atlas.Entities.Models
 {
+    // This model is only used for Cosmos
     public class MarkerPhotos
     {
-        public Guid Id { get; set; }
-        public Guid MapId { get; set; }
+        public Guid PhotoLinkId { get; set; }
+        public Guid AtlasId { get; set; }
         public Guid MarkerId { get; set; }
-        public List<Photo> Photos { get; set; }
+        public List<PhotoData> Photos { get; set; }
     }
 }
