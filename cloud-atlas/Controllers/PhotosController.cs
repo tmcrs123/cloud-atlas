@@ -1,3 +1,5 @@
+using Amazon.S3;
+using Amazon.S3.Model;
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -7,10 +9,20 @@ public class PhotosController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
     private readonly CosmosDbContext cosmosDbContext;
-    public PhotosController(CosmosDbContext cosmosDbContext, SqlDbContext sqlDbContext)
+    private readonly IAmazonS3 s3Client;
+
+    public PhotosController(CosmosDbContext cosmosDbContext, SqlDbContext sqlDbContext, IAmazonS3 s3Client)
     {
         this.cosmosDbContext = cosmosDbContext;
         this.sqlDbContext = sqlDbContext;
+        this.s3Client = s3Client;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPhotosForMarker([FromQuery] Guid markerId)
+    {
+        var photos = await cosmosDbContext.MarkerPhotos.AsNoTracking().Where(mp => mp.MarkerId == markerId).Select(mp => mp.Photos).ToListAsync();
+        return Ok(photos);
     }
 
     [HttpPost]
@@ -80,5 +92,30 @@ public class PhotosController : BaseController
         await cosmosDbContext.SaveChangesAsync();
 
         return Ok();
+    }
+
+    [HttpPost("delete-photo-from-bucket")]
+    public async Task<IActionResult> DeletePhotoFromBucket([FromBody] string key)
+    {
+        try
+        {
+            var bucketName = this.HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+
+            var deleteRequest = new DeleteObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            var response = await s3Client.DeleteObjectAsync(deleteRequest);
+
+            return Ok($"Deleted '{key}' from bucket '{bucketName}'.");
+        }
+        catch (System.Exception e)
+        {
+            System.Console.WriteLine(e);
+            throw;
+        }
     }
 }

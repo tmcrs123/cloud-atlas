@@ -23,6 +23,8 @@ namespace cloud_atlas
             builder.Services.AddSwaggerGen();
             builder.Services.AddAuthentication();
             builder.Services.AddAuthorization();
+            builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+            builder.Services.AddAWSService<Amazon.S3.IAmazonS3>();
 
             var app = builder.Build();
 
@@ -35,8 +37,8 @@ namespace cloud_atlas
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
-            app.UseCors("AllowAll");
+            // app.UseAuthentication();
+            // app.UseCors("AllowAll");
 
             app.MapControllers();
 
