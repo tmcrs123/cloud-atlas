@@ -1,7 +1,9 @@
 ﻿using cloud_atlas.Config;
 using cloud_atlas.Shared.Exceptions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace cloud_atlas
 {
@@ -20,7 +22,7 @@ namespace cloud_atlas
                 options.AddPolicy("AllowAll", policy =>
                 {
                     policy
-                    .WithOrigins(["*"])
+                    .WithOrigins("http://localhost:4200")
                     .AllowAnyHeader()
                     .AllowCredentials()
                     .AllowAnyMethod();
@@ -58,5 +60,22 @@ namespace cloud_atlas
             });
         }
 
+        public static void ConfigureAuthentication(this WebApplicationBuilder builder)
+        {
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                // options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:Authority"]}/v2.0";
+                options.Authority = "https://cloudatlastest.ciamlogin.com/ab3dfd14-7454-472f-99a9-13359bf26e19/.well-known/openid-configuration";
+                options.Audience = "e5850140-95d8-46f8-9cea-a392fe579a0e";
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    // ValidIssuer = "https://sts.windows.net/ab3dfd14-7454-472f-99a9-13359bf26e19/",
+                    ValidIssuer = "https://ab3dfd14-7454-472f-99a9-13359bf26e19.ciamlogin.com/ab3dfd14-7454-472f-99a9-13359bf26e19/v2.0",
+                    ValidateAudience = true,
+                    ValidateLifetime = true
+                };
+            });
+        }
     }
 }
