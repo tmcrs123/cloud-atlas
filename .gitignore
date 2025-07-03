@@ -365,3 +365,5 @@ FodyWeavers.xsd
 
 cloud-atlas/appsettings.Development.json
 cloud-atlas/appsettings.json
+cloud-atlas/appsettings.demo.json
+cloud-atlas/appsettings.prod.json
