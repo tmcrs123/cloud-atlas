@@ -1,5 +1,6 @@
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +15,12 @@ public class AtlasController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAtlasForUser([FromQuery] string userId)
+    [Authorize]
+    public async Task<IActionResult> GetAtlasForUser()
     {
         var atlases = await sqlDbContext.AtlasUsers
         .Include(au => au.Atlas)
-        .Where(au => au.UserId == new Guid(userId))
+        .Where(au => au.UserId == new Guid(HttpContext.Items["sub"] as string))
         .Select(au => new { id = au.Atlas.Id, title = au.Atlas.Title })
         .ToListAsync();
 

@@ -1,7 +1,4 @@
 ﻿
-using Microsoft.EntityFrameworkCore;
-using System.Net;
-
 namespace cloud_atlas
 {
     public class Program
@@ -11,19 +8,18 @@ namespace cloud_atlas
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.ConfigureEnvironment();
             builder.ConfigureGlobalErrorHandling();
             builder.ConfigureResponseCompression();
             builder.ConfigureCors();
             builder.ConfigureDatabase();
-            builder.ConfigureAuthentication();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddAuthentication();
             builder.Services.AddAuthorization();
-            builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+            builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
             builder.Services.AddAWSService<Amazon.S3.IAmazonS3>();
 
             var app = builder.Build();
@@ -37,8 +33,9 @@ namespace cloud_atlas
 
             app.UseHttpsRedirection();
 
-            // app.UseAuthentication();
             // app.UseCors("AllowAll");
+            app.UseAuthorization();
+            app.UseMiddleware<RequireSubClaimMiddleware>();
 
             app.MapControllers();
 
