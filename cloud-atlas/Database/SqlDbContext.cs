@@ -6,9 +6,11 @@ namespace cloud_atlas
 {
     public class SqlDbContext : DbContext
     {
-        public SqlDbContext(DbContextOptions<SqlDbContext> options) : base(options)
-        {
+        public IHttpContextAccessor HttpContextAccessor { get; set; }
 
+        public SqlDbContext(DbContextOptions<SqlDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
+        {
+            HttpContextAccessor = httpContextAccessor;
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -51,6 +53,23 @@ namespace cloud_atlas
         public DbSet<Marker> Markers { get; set; }
         public DbSet<MarkerPhotosLink> PhotoLinks { get; set; }
 
+        // helpers
+
+        public async Task<bool> UserOwnsMap(Guid atlasId)
+        {
+            var sub = HttpContextAccessor.HttpContext.Items["sub"] as string;
+
+            if (string.IsNullOrEmpty(sub))
+            {
+                return false;
+            }
+
+            var atlasUser = await AtlasUsers
+            .FirstOrDefaultAsync(au => au.AtlasId == atlasId && au.UserId == new Guid(sub));
+
+            if (atlasUser?.IsOwner == false) return false;
+            return true;
+        }
     };
 
 }

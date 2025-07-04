@@ -13,9 +13,13 @@ public class MarkerController : BaseController
         this.cosmosDbContext = cosmosDbContext;
     }
 
-    [HttpGet("markers")]
-    public async Task<IActionResult> GetMarkersForAtlas([FromQuery] Guid userId, [FromQuery] Guid atlasId)
+    [HttpGet]
+    public async Task<IActionResult> GetMarkersForAtlas([FromQuery] Guid atlasId)
     {
+        var IsOwner = await sqlDbContext.UserOwnsMap(atlasId);
+
+        if (!IsOwner) return Unauthorized();
+
         var markers = await sqlDbContext.Markers
         .Where(m => m.AtlasId == atlasId)
         .ToListAsync();
@@ -24,7 +28,7 @@ public class MarkerController : BaseController
     }
 
     [HttpGet("photo-link")]
-    public async Task<IActionResult> GetPhotoLinkForMarker([FromQuery] Guid userId, [FromQuery] Guid markerId)
+    public async Task<IActionResult> GetPhotoLinkForMarker([FromQuery] Guid markerId)
     {
         var link = await sqlDbContext.PhotoLinks
         .Where(m => m.MarkerId == markerId)
@@ -53,8 +57,8 @@ public class MarkerController : BaseController
         {
             Title = m.Title,
             AtlasId = m.AtlasId,
-            Latitude = m.Latitude,
-            Longitude = m.Longitude,
+            Latitude = m.Coordinates.Latitude,
+            Longitude = m.Coordinates.Longitude,
             MarkerPhotosLink = new MarkerPhotosLink()
         }).ToList();
 
@@ -68,15 +72,6 @@ public class MarkerController : BaseController
     [HttpDelete]
     public async Task<IActionResult> DeleteMarker([FromBody] DeleteMarkerDto dto)
     {
-        var atlasUser = await sqlDbContext
-        .AtlasUsers
-        .Include(au => au.Atlas)
-        .FirstOrDefaultAsync(au => au.AtlasId == dto.AtlasId && au.UserId == dto.UserId);
-
-        if (atlasUser is null) return NotFound();
-
-        if (atlasUser.IsOwner == false) return Unauthorized();
-
         var marker = await sqlDbContext.Markers.FirstOrDefaultAsync(m => m.Id == dto.MarkerId);
 
         if (marker is null)

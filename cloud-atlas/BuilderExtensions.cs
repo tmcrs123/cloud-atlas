@@ -18,7 +18,7 @@ namespace cloud_atlas
                 throw new Exception("Configuration not found for ASPNETCORE_ENVIRONMENT");
             }
 
-            if (env.ToLower() != "local")
+            if (env.ToLower() == "development")
             {
                 builder.Services.AddAuthentication("FakeAuth")
                     .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>("FakeAuth", null);
