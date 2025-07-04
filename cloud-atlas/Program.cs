@@ -11,6 +11,7 @@ namespace cloud_atlas
 
             // Add services to the container.
             builder.ConfigureEnvironment();
+            builder.ConfigureAuthorization();
             builder.ConfigureGlobalErrorHandling();
             builder.ConfigureResponseCompression();
             builder.ConfigureCors();

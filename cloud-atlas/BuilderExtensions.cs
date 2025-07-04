@@ -1,5 +1,6 @@
 ﻿using cloud_atlas.Config;
 using cloud_atlas.Shared.Exceptions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,23 @@ namespace cloud_atlas
 {
     public static class BuilderExtensions
     {
+
+        public static void ConfigureAuthorization(this WebApplicationBuilder builder)
+        {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.IsNullOrEmpty(env))
+            {
+                throw new Exception("Configuration not found for ASPNETCORE_ENVIRONMENT");
+            }
+
+            if (env.ToLower() != "local")
+            {
+                builder.Services.AddAuthentication("FakeAuth")
+                    .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>("FakeAuth", null);
+            }
+        }
+
         public static void ConfigureEnvironment(this WebApplicationBuilder builder)
         {
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");

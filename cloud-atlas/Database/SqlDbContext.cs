@@ -35,10 +35,10 @@ namespace cloud_atlas
             //AtlasUsers
             builder.Entity<AtlasUser>().HasKey(au => new { au.AtlasId, au.UserId });
 
-            builder.Entity<AtlasUser>()
-            .HasOne(au => au.User)
-            .WithMany(u => u.AtlasUsers)
-            .HasForeignKey(au => au.UserId);
+            // builder.Entity<AtlasUser>()
+            // .HasOne(au => au.User)
+            // .WithMany(u => u.AtlasUsers)
+            // .HasForeignKey(au => au.UserId);
 
             builder.Entity<AtlasUser>()
             .HasOne(au => au.Atlas)
@@ -46,7 +46,6 @@ namespace cloud_atlas
             .HasForeignKey(au => au.AtlasId);
         }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<Atlas> Atlases { get; set; }
         public DbSet<AtlasUser> AtlasUsers { get; set; }
         public DbSet<Marker> Markers { get; set; }
