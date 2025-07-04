@@ -65,7 +65,11 @@ namespace cloud_atlas
 
             builder.Services.AddDbContext<SqlDbContext>(options =>
             {
-                options.UseSqlServer(sqlDbSettings?.ConnectionString, sqlServer => sqlServer.UseNetTopologySuite());
+                options.UseSqlServer(sqlDbSettings?.ConnectionString, sqlServer =>
+                {
+                    sqlServer.UseNetTopologySuite();
+                    sqlServer.EnableRetryOnFailure();
+                });
             });
 
             builder.Services.AddDbContext<CosmosDbContext>(options =>

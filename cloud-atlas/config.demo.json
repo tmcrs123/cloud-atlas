@@ -9,5 +9,5 @@
     "function-name": "cloud-atlas-demo",
     "function-url-enable": false,
     "environment-variables": "\"ASPNETCORE_ENVIRONMENT\"=\"Demo\"",
-    "function-description": "The cloud atlas API from DEMO deployed as a lambda function"
+    "function-description": "The cloud atlas API for DEMO environment deployed as a lambda function"
 }

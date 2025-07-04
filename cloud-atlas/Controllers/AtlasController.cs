@@ -15,7 +15,6 @@ public class AtlasController : BaseController
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAtlasForUser()
     {
         var atlases = await sqlDbContext.AtlasUsers
@@ -35,7 +34,7 @@ public class AtlasController : BaseController
         {
             Title = atlas.Title,
             Markers = new List<Marker>(),
-            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = atlas.UserId, IsOwner = true } }
+            AtlasUsers = new List<AtlasUser> { new AtlasUser() { UserId = new Guid(HttpContext.Items["sub"] as string), IsOwner = true } }
         };
 
         sqlDbContext.Add(entity);
@@ -49,11 +48,9 @@ public class AtlasController : BaseController
         var atlasUser = await sqlDbContext
         .AtlasUsers
         .Include(au => au.Atlas)
-        .FirstOrDefaultAsync(au => au.AtlasId == dto.AtlasId && au.UserId == dto.UserId);
+        .FirstOrDefaultAsync(au => au.AtlasId == dto.AtlasId && au.UserId == new Guid(HttpContext.Items["sub"] as string));
 
-        if (atlasUser is null) return NotFound();
-
-        if (atlasUser.IsOwner == false) return Unauthorized();
+        if (atlasUser is null || atlasUser.IsOwner == false) return Unauthorized();
 
         sqlDbContext.Atlases.Remove(atlasUser.Atlas);
 
@@ -72,6 +69,10 @@ public class AtlasController : BaseController
     [HttpPut]
     public async Task<IActionResult> UpdateAtlas([FromBody] UpdateAtlasDto updateAtlas)
     {
+        var IsOwner = await IsUserOwnerOfAtlas(updateAtlas.Id);
+
+        if (!IsOwner) return Unauthorized();
+
         var atlas = await sqlDbContext.Atlases.FirstOrDefaultAsync(a => a.Id == updateAtlas.Id);
 
         if (atlas is null)
@@ -86,12 +87,36 @@ public class AtlasController : BaseController
         return Ok(atlas);
     }
 
-    [HttpPost("add-user")]
+    [HttpPost("share")]
     public async Task<IActionResult> AddUserToAtlas([FromBody] AddUserToAtlasDto dto)
     {
+        var IsOwner = await IsUserOwnerOfAtlas(dto.AtlasId);
+
+        if (!IsOwner) return Unauthorized();
+
+        var atlasUser = await sqlDbContext
+        .AtlasUsers
+        .Include(au => au.Atlas)
+        .FirstOrDefaultAsync(au => au.AtlasId == dto.AtlasId && au.UserId == new Guid(HttpContext.Items["sub"] as string));
+
+        if (atlasUser is null) return NotFound();
+
+        if (atlasUser.IsOwner == false) return Unauthorized();
+
         sqlDbContext.AtlasUsers.Add(new AtlasUser() { AtlasId = dto.AtlasId, UserId = dto.UserId, IsOwner = false });
         await sqlDbContext.SaveChangesAsync();
 
         return Ok();
+    }
+
+    private async Task<bool> IsUserOwnerOfAtlas(Guid atlasId)
+    {
+        var atlasUser = await sqlDbContext
+        .AtlasUsers
+        .Include(au => au.Atlas)
+        .FirstOrDefaultAsync(au => au.AtlasId == atlasId && au.UserId == new Guid(HttpContext.Items["sub"] as string));
+
+        if (atlasUser.IsOwner == false) return false;
+        return true;
     }
 }

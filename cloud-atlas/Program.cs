@@ -1,4 +1,6 @@
 ﻿
+using Microsoft.AspNetCore.Mvc.Authorization;
+
 namespace cloud_atlas
 {
     public class Program
@@ -14,7 +16,10 @@ namespace cloud_atlas
             builder.ConfigureCors();
             builder.ConfigureDatabase();
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options =>
+            {
+                options.Filters.Add(new AuthorizeFilter());
+            });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -33,7 +38,7 @@ namespace cloud_atlas
 
             app.UseHttpsRedirection();
 
-            // app.UseCors("AllowAll");
+            app.UseCors("AllowAll");
             app.UseAuthorization();
             app.UseMiddleware<RequireSubClaimMiddleware>();
 
