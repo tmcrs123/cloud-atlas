@@ -1,6 +1,5 @@
 ﻿
 using System.Text.Json.Serialization;
-using Amazon.CloudFront;
 using Amazon.S3;
 using Amazon.SecretsManager;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -38,7 +37,6 @@ namespace cloud_atlas
             builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
             builder.Services.AddAWSService<IAmazonS3>();
             builder.Services.AddAWSService<IAmazonSecretsManager>();
-            builder.Services.AddAWSService<IAmazonCloudFront>();
             builder.Services.AddHttpContextAccessor();
 
             var app = builder.Build();
