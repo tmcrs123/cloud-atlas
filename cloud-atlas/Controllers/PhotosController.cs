@@ -1,69 +1,57 @@
-using Amazon.Runtime.Internal.Auth;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 public class PhotosController : BaseController
 {
-    private readonly SqlDbContext SqlDbContext;
-    private readonly CosmosDbContext CosmosDbContext;
     private readonly IAmazonS3 S3Client;
     private IAmazonSecretsManager SecretsManagerClient { get; set; }
+    public IDynamoDBContext DynamoDBContext { get; set; }
     private IConfiguration Configuration { get; set; }
 
-    public PhotosController(CosmosDbContext cosmosDbContext, SqlDbContext sqlDbContext, IAmazonS3 s3Client, IAmazonSecretsManager secretsManagerClient, IConfiguration configuration)
+    public PhotosController(IAmazonS3 s3Client, IAmazonSecretsManager secretsManagerClient, IConfiguration configuration, IDynamoDBContext dynamoDBContext)
     {
-        CosmosDbContext = cosmosDbContext;
-        SqlDbContext = sqlDbContext;
         S3Client = s3Client;
         SecretsManagerClient = secretsManagerClient;
         Configuration = configuration;
+        DynamoDBContext = dynamoDBContext;
     }
 
-    [HttpGet("cloudfront-url")]
-    public async Task<IActionResult> GetCloudfrontSignedURL([FromQuery] Guid? photoLinkId)
+    [HttpPost("cloudfront-url")]
+    public async Task<IActionResult> GetCloudfrontSignedURL([FromQuery] Guid AtlasId, [FromQuery] Guid MarkerId, [FromBody] List<string> keys)
     {
-
-        string path = Configuration.GetValue<string>("AWS:TmpPath");
         string xmlSecret;
 
-        if (System.IO.File.Exists(path))
+        GetSecretValueRequest request = new GetSecretValueRequest()
         {
-            System.Console.WriteLine("File exists at path {0}", path);
-            xmlSecret = System.IO.File.ReadAllText(path);
-        }
-        else
-        {
-            System.Console.WriteLine("File DOES NOT EXIST at path {0}", path);
-            // generate key in xml
-            GetSecretValueRequest request = new GetSecretValueRequest()
-            {
-                SecretId = Configuration.GetValue<string>("AWS:CloudfrontPrivateKeyName")
-            };
+            SecretId = Configuration.GetValue<string>("AWS:CloudfrontPrivateKeyName")
+        };
 
-            var secret = await SecretsManagerClient.GetSecretValueAsync(request);
+        var secret = await SecretsManagerClient.GetSecretValueAsync(request);
 
-            xmlSecret = CloudfrontSignedURLUtils.ConvertPemToXML(secret.SecretString);
+        xmlSecret = CloudfrontSignedURLUtils.ConvertPemToXML(secret.SecretString);
 
-            System.IO.File.WriteAllText(path, xmlSecret);
-        }
-
+        List<string> cloudfrontUrls = new List<string>();
         var cloudfrontKeyPairId = Configuration.GetValue<string>("AWS:CloudfrontKeyPairId");
         var cloudfrontDomain = Configuration.GetValue<string>("AWS:CloudfrontDomain");
-        var objectKey = "017895e8-dbc1-4f03-9c9c-12e1671c807c.jpg"; // or photo.S3Key
-        var s3Url = $"https://{cloudfrontDomain}/{objectKey}";
         var expiresOn = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
-        var policy = $"{{\"Statement\":[{{\"Resource\":\"{s3Url}\",\"Condition\":{{\"DateLessThan\":{{\"AWS:EpochTime\":{expiresOn}}}}}}}]}}";
 
+        foreach (var key in keys)
+        {
+            var objectKey = $"{AtlasId}/{MarkerId}/{key}";
+            var s3Url = $"https://{cloudfrontDomain}/{objectKey}";
+            var policy = $"{{\"Statement\":[{{\"Resource\":\"{s3Url}\",\"Condition\":{{\"DateLessThan\":{{\"AWS:EpochTime\":{expiresOn}}}}}}}]}}";
 
-        var url = CloudfrontSignedURLUtils.CreateCannedPrivateURL(s3Url, "minutes", "5", policy, xmlSecret, cloudfrontKeyPairId);
+            cloudfrontUrls.Add(CloudfrontSignedURLUtils.CreateCannedPrivateURL(s3Url, "minutes", "5", policy, xmlSecret, cloudfrontKeyPairId));
+        }
 
-        return Ok(url);
+        return Ok(cloudfrontUrls);
     }
 
     [HttpPost("presigned-url")]
@@ -72,8 +60,7 @@ public class PhotosController : BaseController
         var request = new GetPreSignedUrlRequest
         {
             BucketName = Configuration.GetValue<string>("AWS:DumpBucketName"),
-            // Key = $"{dto.AtlasId}/{dto.MarkerId}/{Guid.NewGuid()}",
-            Key = "017895e8-dbc1-4f03-9c9c-12e1671c807c.jpg",
+            Key = $"{dto.AtlasId}/{dto.MarkerId}/{dto.Filename}",
             Verb = HttpVerb.PUT,
             Expires = DateTime.Now.AddMinutes(60)
         };
@@ -82,104 +69,113 @@ public class PhotosController : BaseController
         return Ok(url);
     }
 
-    [HttpGet("s3-url")]
-    public async Task<IActionResult> GetPhotosForMarker([FromQuery] Guid markerId)
+    [HttpGet("photos")]
+    public async Task<IActionResult> GetPhotosForMarker([FromQuery] Guid AtlasId, [FromQuery] Guid MarkerId)
     {
-        var photos = await CosmosDbContext.MarkerPhotos.AsNoTracking().Where(mp => mp.MarkerId == markerId).Select(mp => mp.Photos).ToListAsync();
-        return Ok(photos);
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(AtlasId.ToString(), MarkerId.ToString());
+        return Ok(response.Photos);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> SavePhotos([FromBody] SavePhotosDto dto)
+    [HttpPut("dynamo-test")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdatePhotoDynamo([FromBody] UpdatePhotoDto2 dto)
     {
-        var photoLinkId = await SqlDbContext.PhotoLinks.FirstOrDefaultAsync(pl => pl.MarkerId == dto.MarkerId);
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(
+            dto.AtlasId.ToString(),
+            dto.MarkerId.ToString()
+        );
 
-        if (photoLinkId is null) return NotFound();
-
-        //does this marker already have photos?
-        var existingMarker = await CosmosDbContext.MarkerPhotos.FirstOrDefaultAsync(mp => mp.MarkerId == dto.MarkerId);
-
-        if (existingMarker is null)
+        if (!response.Photos.Any())
         {
-            MarkerPhotos markerPhotos = new MarkerPhotos()
-            {
-                AtlasId = dto.AtlasId,
-                MarkerId = dto.MarkerId,
-                Photos = dto.PhotosData,
-                PhotoLinkId = photoLinkId.PhotoLinkId
-            };
-
-            CosmosDbContext.MarkerPhotos.AddRange(markerPhotos);
-        }
-        else
-        {
-            existingMarker.Photos.AddRange(dto.PhotosData);
+            return NotFound();
         }
 
-        await CosmosDbContext.SaveChangesAsync();
+        var photoToUpdate = response.Photos.Where(p => p.Id == dto.PhotoData.Id).SingleOrDefault();
+
+        if (photoToUpdate is null) return NotFound();
+
+        photoToUpdate.Legend = dto.PhotoData.Legend;
+
+        await DynamoDBContext.SaveAsync(response);
 
         return Ok();
-    }
-
-    [HttpPut]
-    public async Task<IActionResult> UpdatePhoto([FromBody] UpdatePhotoDto dto)
-    {
-        var photoLink = await CosmosDbContext.MarkerPhotos
-            .FirstOrDefaultAsync(pl => pl.PhotoLinkId == dto.PhotoLinkId);
-
-        if (photoLink == null)
-            return NotFound();
-
-        var photo = photoLink.Photos.FirstOrDefault(p => p.Id == dto.PhotoData.Id);
-
-        if (photo == null)
-            return NotFound();
-
-        photo.Legend = dto.PhotoData.Legend;
-
-        await CosmosDbContext.SaveChangesAsync();
-
-        return Ok(photo);
     }
 
     [HttpDelete]
     public async Task<IActionResult> DeletePhoto([FromBody] DeletePhotoDto dto)
     {
-        var photoLink = await CosmosDbContext.MarkerPhotos
-            .FirstOrDefaultAsync(pl => pl.PhotoLinkId == dto.PhotoLinkId);
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(
+            dto.AtlasId.ToString(),
+            dto.MarkerId.ToString()
+        );
 
-        if (photoLink == null)
+        if (!response.Photos.Any())
+        {
             return NotFound();
+        }
 
-        photoLink.Photos = photoLink.Photos.Where(p => p.Id != dto.PhotoId).ToList();
+        if (!response.Photos.Where(p => p.Id == dto.PhotoId).Any())
+        {
+            return NotFound();
+        }
 
-        await CosmosDbContext.SaveChangesAsync();
+        response.Photos.RemoveAll(p => p.Id == dto.PhotoId);
+
+        await DynamoDBContext.SaveAsync(response);
+
+        var bucketName = HttpContext.RequestServices
+                        .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+
+        var deleteRequest = new DeleteObjectRequest
+        {
+            BucketName = bucketName,
+            Key = $"{dto.AtlasId}/{dto.MarkerId}/{dto.PhotoId}"
+        };
+
+        var s3Response = await S3Client.DeleteObjectAsync(deleteRequest);
 
         return Ok();
     }
 
-    [HttpPost("delete-photo-from-bucket")]
-    public async Task<IActionResult> DeletePhotoFromBucket([FromBody] string key)
+    [HttpDelete("all")]
+    public async Task<IActionResult> DeleteAllPhotosForMarker([FromBody] DeleteAllPhotosDto dto)
     {
-        try
-        {
-            var bucketName = this.HttpContext.RequestServices
-                .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(
+            dto.AtlasId.ToString(),
+            dto.MarkerId.ToString()
+        );
 
-            var deleteRequest = new DeleteObjectRequest
+        if (response is null)
+        {
+            return NotFound();
+        }
+
+        await DynamoDBContext.DeleteAsync(response);
+
+        var bucketName = HttpContext.RequestServices
+            .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = bucketName,
+            Prefix = $"{dto.AtlasId}/{dto.MarkerId}/"
+        };
+
+        var listResponse = await S3Client.ListObjectsV2Async(listRequest);
+
+        if (listResponse.S3Objects.Any())
+        {
+            var deleteObjectsRequest = new DeleteObjectsRequest
             {
                 BucketName = bucketName,
-                Key = key
+                Objects = listResponse.S3Objects
+                    .Select(o => new KeyVersion { Key = o.Key })
+                    .ToList()
             };
 
-            var response = await S3Client.DeleteObjectAsync(deleteRequest);
+            await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
+        }
 
-            return Ok($"Deleted '{key}' from bucket '{bucketName}'.");
-        }
-        catch (System.Exception e)
-        {
-            System.Console.WriteLine(e);
-            throw;
-        }
+        return Ok();
     }
 }

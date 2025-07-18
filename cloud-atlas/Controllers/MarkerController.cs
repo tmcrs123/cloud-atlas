@@ -21,6 +21,7 @@ public class MarkerController : BaseController
         if (!IsOwner) return Unauthorized();
 
         var markers = await sqlDbContext.Markers
+        .Include(m => m.MarkerPhotosLink)
         .Where(m => m.AtlasId == atlasId)
         .ToListAsync();
 
@@ -83,13 +84,13 @@ public class MarkerController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        var markerToRemove = await cosmosDbContext.MarkerPhotos.FirstOrDefaultAsync(mp => mp.MarkerId == dto.MarkerId);
+        // var markerToRemove = await cosmosDbContext.MarkerPhotos.FirstOrDefaultAsync(mp => mp.MarkerId == dto.MarkerId);
 
-        if (markerToRemove is null) return Ok();
+        // if (markerToRemove is null) return Ok();
 
-        cosmosDbContext.MarkerPhotos.Remove(markerToRemove);
+        // cosmosDbContext.MarkerPhotos.Remove(markerToRemove);
 
-        await cosmosDbContext.SaveChangesAsync();
+        // await cosmosDbContext.SaveChangesAsync();
 
         return Ok();
     }

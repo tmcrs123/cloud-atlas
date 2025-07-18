@@ -54,15 +54,15 @@ public class AtlasController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        var markerPhotosToRemove = await cosmosDbContext.MarkerPhotos
-            .Where(mp => mp.AtlasId == dto.AtlasId).ToListAsync();
+        // var markerPhotosToRemove = await cosmosDbContext.MarkerPhotos
+        //     .Where(mp => mp.AtlasId == dto.AtlasId).ToListAsync();
 
-        if (markerPhotosToRemove.Any())
-        {
-            cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+        // if (markerPhotosToRemove.Any())
+        // {
+        //     cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
 
-            await cosmosDbContext.SaveChangesAsync();
-        }
+        //     await cosmosDbContext.SaveChangesAsync();
+        // }
 
         return Ok();
     }
