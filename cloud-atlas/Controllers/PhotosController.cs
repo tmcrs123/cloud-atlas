@@ -3,7 +3,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
-using cloud_atlas;
 using cloud_atlas.Entities.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

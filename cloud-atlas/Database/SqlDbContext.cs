@@ -27,13 +27,6 @@ namespace cloud_atlas
             // Marker
             builder.Entity<Marker>().Property(m => m.Title).HasMaxLength(30).IsRequired(required: true);
 
-            builder.Entity<Marker>()
-            .HasOne(m => m.MarkerPhotosLink)
-            .WithOne()
-            .HasForeignKey<MarkerPhotosLink>(pl => pl.MarkerId);
-
-            builder.Entity<MarkerPhotosLink>().HasKey(mpl => mpl.PhotoLinkId);
-
             //AtlasUsers
             builder.Entity<AtlasUser>().HasKey(au => new { au.AtlasId, au.UserId });
 
@@ -51,7 +44,6 @@ namespace cloud_atlas
         public DbSet<Atlas> Atlases { get; set; }
         public DbSet<AtlasUser> AtlasUsers { get; set; }
         public DbSet<Marker> Markers { get; set; }
-        public DbSet<MarkerPhotosLink> PhotoLinks { get; set; }
 
         // helpers
 

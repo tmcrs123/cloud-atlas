@@ -89,11 +89,6 @@ namespace cloud_atlas
                     sqlServer.EnableRetryOnFailure();
                 });
             });
-
-            builder.Services.AddDbContext<CosmosDbContext>(options =>
-            {
-                options.UseCosmos(cosmosDbSettings.URL, cosmosDbSettings.Key, databaseName: cosmosDbSettings.DatabaseName);
-            });
         }
     }
 }

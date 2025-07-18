@@ -1,3 +1,6 @@
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.S3;
+using Amazon.S3.Model;
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -6,11 +9,13 @@ using Microsoft.EntityFrameworkCore;
 public class AtlasController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
-    private readonly CosmosDbContext cosmosDbContext;
-    public AtlasController(SqlDbContext sqlDbContext, CosmosDbContext cosmosDbContext)
+    private readonly IAmazonS3 S3Client;
+    private readonly IDynamoDBContext DynamoDBContext;
+    public AtlasController(SqlDbContext sqlDbContext, IAmazonS3 s3Client, IDynamoDBContext dynamoDBContext)
     {
         this.sqlDbContext = sqlDbContext;
-        this.cosmosDbContext = cosmosDbContext;
+        S3Client = s3Client;
+        DynamoDBContext = dynamoDBContext;
     }
 
     [HttpGet]
@@ -37,6 +42,7 @@ public class AtlasController : BaseController
 
         sqlDbContext.Add(entity);
         await sqlDbContext.SaveChangesAsync();
+        
         return Ok(new { Id = entity.Id });
     }
 
@@ -54,16 +60,41 @@ public class AtlasController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        // var markerPhotosToRemove = await cosmosDbContext.MarkerPhotos
-        //     .Where(mp => mp.AtlasId == dto.AtlasId).ToListAsync();
+        var response =  await DynamoDBContext.QueryAsync<MarkerPhotos>(dto.AtlasId.ToString()).GetRemainingAsync();
 
-        // if (markerPhotosToRemove.Any())
-        // {
-        //     cosmosDbContext.MarkerPhotos.RemoveRange(markerPhotosToRemove);
+        if (response is null)
+        {
+            return NotFound();
+        }
 
-        //     await cosmosDbContext.SaveChangesAsync();
-        // }
+        foreach (var item in response)
+        {
+            await DynamoDBContext.DeleteAsync(item);
+        }
 
+        var bucketName = HttpContext.RequestServices
+            .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = bucketName,
+            Prefix = $"{dto.AtlasId}"
+        };
+
+        var listResponse = await S3Client.ListObjectsV2Async(listRequest);
+
+        if (listResponse.S3Objects.Any())
+        {
+            var deleteObjectsRequest = new DeleteObjectsRequest
+            {
+                BucketName = bucketName,
+                Objects = listResponse.S3Objects
+                    .Select(o => new KeyVersion { Key = o.Key })
+                    .ToList()
+            };
+
+            await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
+        }
         return Ok();
     }
 

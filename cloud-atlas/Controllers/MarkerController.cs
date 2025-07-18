@@ -1,3 +1,6 @@
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.S3;
+using Amazon.S3.Model;
 using cloud_atlas;
 using cloud_atlas.Entities.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -6,11 +9,13 @@ using Microsoft.EntityFrameworkCore;
 public class MarkerController : BaseController
 {
     private readonly SqlDbContext sqlDbContext;
-    private readonly CosmosDbContext cosmosDbContext;
-    public MarkerController(SqlDbContext sqlDbContext, CosmosDbContext cosmosDbContext)
+    private readonly IAmazonS3 S3Client;
+    private readonly IDynamoDBContext DynamoDBContext;
+    public MarkerController(SqlDbContext sqlDbContext, IDynamoDBContext dynamoDBContext, IAmazonS3 s3Client)
     {
         this.sqlDbContext = sqlDbContext;
-        this.cosmosDbContext = cosmosDbContext;
+        DynamoDBContext = dynamoDBContext;
+        S3Client = s3Client;
     }
 
     [HttpGet]
@@ -21,22 +26,10 @@ public class MarkerController : BaseController
         if (!IsOwner) return Unauthorized();
 
         var markers = await sqlDbContext.Markers
-        .Include(m => m.MarkerPhotosLink)
         .Where(m => m.AtlasId == atlasId)
         .ToListAsync();
 
         return Ok(markers);
-    }
-
-    [HttpGet("photo-link")]
-    public async Task<IActionResult> GetPhotoLinkForMarker([FromQuery] Guid markerId)
-    {
-        var link = await sqlDbContext.PhotoLinks
-        .Where(m => m.MarkerId == markerId)
-        .Select(pl => pl.PhotoLinkId)
-        .FirstOrDefaultAsync();
-
-        return Ok(link);
     }
 
     [HttpPost]
@@ -60,14 +53,13 @@ public class MarkerController : BaseController
             AtlasId = m.AtlasId,
             Latitude = m.Coordinates.Latitude,
             Longitude = m.Coordinates.Longitude,
-            MarkerPhotosLink = new MarkerPhotosLink()
         }).ToList();
 
         sqlDbContext.Markers.AddRange(entities);
 
         await sqlDbContext.SaveChangesAsync();
 
-        return Ok(entities.Select(e => new { Id = e.Id, PhotosLink = e.MarkerPhotosLink.PhotoLinkId }));
+        return Ok(entities.Select(e => new { Id = e.Id }));
     }
 
     [HttpDelete]
@@ -84,13 +76,41 @@ public class MarkerController : BaseController
 
         await sqlDbContext.SaveChangesAsync();
 
-        // var markerToRemove = await cosmosDbContext.MarkerPhotos.FirstOrDefaultAsync(mp => mp.MarkerId == dto.MarkerId);
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(
+           dto.AtlasId.ToString(),
+           dto.MarkerId.ToString()
+       );
 
-        // if (markerToRemove is null) return Ok();
+        if (response is null)
+        {
+            return NotFound();
+        }
 
-        // cosmosDbContext.MarkerPhotos.Remove(markerToRemove);
+        await DynamoDBContext.DeleteAsync(response);
 
-        // await cosmosDbContext.SaveChangesAsync();
+        var bucketName = HttpContext.RequestServices
+            .GetRequiredService<IConfiguration>()["AWS:BucketName"];
+
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = bucketName,
+            Prefix = $"{dto.AtlasId}/{dto.MarkerId}/"
+        };
+
+        var listResponse = await S3Client.ListObjectsV2Async(listRequest);
+
+        if (listResponse.S3Objects.Any())
+        {
+            var deleteObjectsRequest = new DeleteObjectsRequest
+            {
+                BucketName = bucketName,
+                Objects = listResponse.S3Objects
+                    .Select(o => new KeyVersion { Key = o.Key })
+                    .ToList()
+            };
+
+            await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
+        }
 
         return Ok();
     }
