@@ -1,11 +1,17 @@
-﻿namespace cloud_atlas.Entities.Models
+﻿using Amazon.DynamoDBv2.DataModel;
+
+namespace cloud_atlas.Entities.Models
 {
-    // This model is only used for Cosmos
+    [DynamoDBTable("photos")]
     public class MarkerPhotos
     {
-        public Guid PhotoLinkId { get; set; }
-        public Guid AtlasId { get; set; }
-        public Guid MarkerId { get; set; }
+        [DynamoDBHashKey("atlasId")]
+        public string AtlasId { get; set; }
+
+        [DynamoDBRangeKey("markerId")]
+        public string MarkerId { get; set; }
+
+        [DynamoDBProperty("photos")]
         public List<PhotoData> Photos { get; set; }
     }
 }

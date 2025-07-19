@@ -1,9 +1,13 @@
-﻿namespace cloud_atlas.Entities.Models
+﻿using Amazon.DynamoDBv2.DataModel;
+
+namespace cloud_atlas.Entities.Models
 {
     public class PhotoData
     {
-        public Guid Id { get; set; }
+        [DynamoDBProperty("legend")]
         public string Legend { get; set; }
-        public string URL { get; set; }
+
+        [DynamoDBProperty("id")]
+        public string Id { get; set; }
     }
 }

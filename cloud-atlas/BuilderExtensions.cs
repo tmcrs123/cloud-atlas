@@ -1,14 +1,42 @@
 ﻿using cloud_atlas.Config;
 using cloud_atlas.Shared.Exceptions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace cloud_atlas
 {
     public static class BuilderExtensions
     {
+
+        public static void ConfigureAuthorization(this WebApplicationBuilder builder)
+        {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.IsNullOrEmpty(env))
+            {
+                throw new Exception("Configuration not found for ASPNETCORE_ENVIRONMENT");
+            }
+
+            if (env.ToLower() == "development")
+            {
+                builder.Services.AddAuthentication("FakeAuth")
+                    .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>("FakeAuth", null);
+            }
+        }
+
+        public static void ConfigureEnvironment(this WebApplicationBuilder builder)
+        {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.IsNullOrEmpty(env))
+            {
+                throw new Exception("Configuration not found for ASPNETCORE_ENVIRONMENT");
+            }
+
+            builder.Configuration.SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile($"appsettings.{env.ToLower()}.json");
+        }
+
         public static void ConfigureGlobalErrorHandling(this WebApplicationBuilder builder)
         {
             builder.Services.AddProblemDetails();
@@ -17,6 +45,10 @@ namespace cloud_atlas
 
         public static void ConfigureCors(this WebApplicationBuilder builder)
         {
+            var gatewayUrl = builder.Configuration.GetSection("AWS:GatewayUrl").Value;
+
+            if (string.IsNullOrEmpty(gatewayUrl)) throw new Exception("Missing gateway URL");
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -51,30 +83,11 @@ namespace cloud_atlas
 
             builder.Services.AddDbContext<SqlDbContext>(options =>
             {
-                options.UseSqlServer(sqlDbSettings?.ConnectionString, sqlServer => sqlServer.UseNetTopologySuite());
-            });
-
-            builder.Services.AddDbContext<CosmosDbContext>(options =>
-            {
-                options.UseCosmos(cosmosDbSettings.URL, cosmosDbSettings.Key, databaseName: cosmosDbSettings.DatabaseName);
-            });
-        }
-
-        public static void ConfigureAuthentication(this WebApplicationBuilder builder)
-        {
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-            {
-                // options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:Authority"]}/v2.0";
-                options.Authority = "https://cloudatlastest.ciamlogin.com/ab3dfd14-7454-472f-99a9-13359bf26e19/.well-known/openid-configuration";
-                options.Audience = "e5850140-95d8-46f8-9cea-a392fe579a0e";
-                options.TokenValidationParameters = new TokenValidationParameters
+                options.UseSqlServer(sqlDbSettings?.ConnectionString, sqlServer =>
                 {
-                    ValidateIssuer = true,
-                    // ValidIssuer = "https://sts.windows.net/ab3dfd14-7454-472f-99a9-13359bf26e19/",
-                    ValidIssuer = "https://ab3dfd14-7454-472f-99a9-13359bf26e19.ciamlogin.com/ab3dfd14-7454-472f-99a9-13359bf26e19/v2.0",
-                    ValidateAudience = true,
-                    ValidateLifetime = true
-                };
+                    sqlServer.UseNetTopologySuite();
+                    sqlServer.EnableRetryOnFailure();
+                });
             });
         }
     }
