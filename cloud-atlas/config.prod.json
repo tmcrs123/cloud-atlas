@@ -6,8 +6,8 @@
     "function-handler": "cloud-atlas",
     "function-memory-size": 512,
     "function-timeout": 120,
-    "function-name": "cloud-atlas-demo",
+    "function-name": "cloud-atlas-prod",
     "function-url-enable": false,
-    "environment-variables": "\"ASPNETCORE_ENVIRONMENT\"=\"Demo\"",
-    "function-description": "The cloud atlas API for DEMO environment deployed as a lambda function"
+    "environment-variables": "\"ASPNETCORE_ENVIRONMENT\"=\"Prod\"",
+    "function-description": "The cloud atlas API for PROD environment deployed as a lambda function"
 }

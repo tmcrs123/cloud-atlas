@@ -45,18 +45,13 @@ namespace cloud_atlas
 
         public static void ConfigureCors(this WebApplicationBuilder builder)
         {
-            var gatewayUrl = builder.Configuration.GetSection("AWS:GatewayUrl").Value;
-
-            if (string.IsNullOrEmpty(gatewayUrl)) throw new Exception("Missing gateway URL");
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
                 {
                     policy
-                    .WithOrigins("http://localhost:4200")
+                    .AllowAnyOrigin()
                     .AllowAnyHeader()
-                    .AllowCredentials()
                     .AllowAnyMethod();
                 });
             });
