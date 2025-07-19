@@ -51,8 +51,9 @@ public class MarkerController : BaseController
         {
             Title = m.Title,
             AtlasId = m.AtlasId,
-            Latitude = m.Coordinates.Latitude,
-            Longitude = m.Coordinates.Longitude,
+            Latitude = m.Latitude,
+            Longitude = m.Longitude,
+            Journal = string.Empty
         }).ToList();
 
         sqlDbContext.Markers.AddRange(entities);
@@ -83,7 +84,7 @@ public class MarkerController : BaseController
 
         if (response is null)
         {
-            return NotFound();
+            return Ok();
         }
 
         await DynamoDBContext.DeleteAsync(response);
@@ -128,6 +129,7 @@ public class MarkerController : BaseController
         marker.Title = updateMarker.Title ?? marker.Title;
         marker.Latitude = updateMarker.Latitude ?? marker.Latitude;
         marker.Longitude = updateMarker.Longitude ?? marker.Longitude;
+        marker.Journal = updateMarker.Journal ?? marker.Journal;
 
         await sqlDbContext.SaveChangesAsync();
 

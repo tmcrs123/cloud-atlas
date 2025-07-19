@@ -22,9 +22,15 @@ public class PhotosController : BaseController
         DynamoDBContext = dynamoDBContext;
     }
 
-    [HttpPost("cloudfront-url")]
-    public async Task<IActionResult> GetCloudfrontSignedURL([FromQuery] Guid AtlasId, [FromQuery] Guid MarkerId, [FromBody] List<string> keys)
+    [HttpGet]
+    public async Task<IActionResult> GetCloudfrontSignedURL([FromQuery] Guid AtlasId, [FromQuery] Guid MarkerId)
     {
+        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(AtlasId.ToString(), MarkerId.ToString());
+
+        if(response is null) return Ok(new List<string>());
+
+        if (!response.Photos.Any()) return Ok(new List<string>());
+
         string xmlSecret;
 
         GetSecretValueRequest request = new GetSecretValueRequest()
@@ -36,21 +42,22 @@ public class PhotosController : BaseController
 
         xmlSecret = CloudfrontSignedURLUtils.ConvertPemToXML(secret.SecretString);
 
-        List<string> cloudfrontUrls = new List<string>();
+        List<object> photosData = new List<object>();
         var cloudfrontKeyPairId = Configuration.GetValue<string>("AWS:CloudfrontKeyPairId");
         var cloudfrontDomain = Configuration.GetValue<string>("AWS:CloudfrontDomain");
         var expiresOn = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
 
-        foreach (var key in keys)
+        foreach (var photo in response.Photos)
         {
-            var objectKey = $"{AtlasId}/{MarkerId}/{key}";
+            var objectKey = $"{AtlasId}/{MarkerId}/{photo.Id}";
             var s3Url = $"https://{cloudfrontDomain}/{objectKey}";
             var policy = $"{{\"Statement\":[{{\"Resource\":\"{s3Url}\",\"Condition\":{{\"DateLessThan\":{{\"AWS:EpochTime\":{expiresOn}}}}}}}]}}";
+            var url = CloudfrontSignedURLUtils.CreateCannedPrivateURL(s3Url, "minutes", "5", policy, xmlSecret, cloudfrontKeyPairId);
 
-            cloudfrontUrls.Add(CloudfrontSignedURLUtils.CreateCannedPrivateURL(s3Url, "minutes", "5", policy, xmlSecret, cloudfrontKeyPairId));
+            photosData.Add(new { url, photo.Legend, photo.Id  });
         }
 
-        return Ok(cloudfrontUrls);
+        return Ok(photosData);
     }
 
     [HttpPost("presigned-url")]
@@ -68,16 +75,8 @@ public class PhotosController : BaseController
         return Ok(url);
     }
 
-    [HttpGet("photos")]
-    public async Task<IActionResult> GetPhotosForMarker([FromQuery] Guid AtlasId, [FromQuery] Guid MarkerId)
-    {
-        var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(AtlasId.ToString(), MarkerId.ToString());
-        return Ok(response.Photos);
-    }
-
-    [HttpPut("dynamo-test")]
-    [AllowAnonymous]
-    public async Task<IActionResult> UpdatePhotoDynamo([FromBody] UpdatePhotoDto2 dto)
+    [HttpPut]
+    public async Task<IActionResult> UpdatePhotoDynamo([FromBody] UpdatePhotoDto dto)
     {
         var response = await DynamoDBContext.LoadAsync<MarkerPhotos>(
             dto.AtlasId.ToString(),

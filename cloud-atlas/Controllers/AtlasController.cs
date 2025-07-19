@@ -64,7 +64,7 @@ public class AtlasController : BaseController
 
         if (response is null)
         {
-            return NotFound();
+            return Ok();
         }
 
         foreach (var item in response)
@@ -83,7 +83,7 @@ public class AtlasController : BaseController
 
         var listResponse = await S3Client.ListObjectsV2Async(listRequest);
 
-        if (listResponse.S3Objects.Any())
+        if (listResponse.S3Objects is not null && listResponse.S3Objects.Any())
         {
             var deleteObjectsRequest = new DeleteObjectsRequest
             {
