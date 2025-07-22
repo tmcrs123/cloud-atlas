@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace cloud_atlas.Shared.Exceptions
 {
@@ -6,7 +7,9 @@ namespace cloud_atlas.Shared.Exceptions
     {
         ValueTask<bool> IExceptionHandler.TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            System.Console.WriteLine(exception);
+            System.Console.WriteLine(JsonSerializer.Serialize(exception.StackTrace));
+            throw exception;
         }
     }
 }

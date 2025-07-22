@@ -69,11 +69,8 @@ namespace cloud_atlas
 
         public static void ConfigureDatabase(this WebApplicationBuilder builder)
         {
-            builder.Services.Configure<CosmosDbSettings>(builder.Configuration.GetSection("CosmosDb"));
-
             builder.Services.Configure<SqlDbSettings>(builder.Configuration.GetSection("SqlDb"));
 
-            var cosmosDbSettings = builder.Configuration.GetSection("CosmosDb").Get<CosmosDbSettings>();
             var sqlDbSettings = builder.Configuration.GetSection("SqlDb").Get<SqlDbSettings>();
 
             builder.Services.AddDbContext<SqlDbContext>(options =>

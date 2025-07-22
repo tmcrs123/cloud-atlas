@@ -77,7 +77,10 @@ namespace cloud_atlas
 
             app.UseCors("AllowAll");
             app.UseAuthorization();
-            app.UseMiddleware<RequireSubClaimMiddleware>();
+            app.UseWhen(context => !context.Request.Path.StartsWithSegments("/api/healthcheck"), appBuilder =>
+            {
+                appBuilder.UseMiddleware<RequireSubClaimMiddleware>();
+            });
 
             app.MapControllers();
 
