@@ -30,11 +30,6 @@ namespace cloud_atlas
             //AtlasUsers
             builder.Entity<AtlasUser>().HasKey(au => new { au.AtlasId, au.UserId });
 
-            // builder.Entity<AtlasUser>()
-            // .HasOne(au => au.User)
-            // .WithMany(u => u.AtlasUsers)
-            // .HasForeignKey(au => au.UserId);
-
             builder.Entity<AtlasUser>()
             .HasOne(au => au.Atlas)
             .WithMany(u => u.AtlasUsers)
