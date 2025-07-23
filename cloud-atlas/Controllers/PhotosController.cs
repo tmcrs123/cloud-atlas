@@ -68,7 +68,7 @@ public class PhotosController : BaseController
             BucketName = Configuration.GetValue<string>("AWS:DumpBucketName"),
             Key = $"{dto.AtlasId}/{dto.MarkerId}/{dto.Filename}",
             Verb = HttpVerb.PUT,
-            Expires = DateTime.Now.AddMinutes(60)
+            Expires = DateTime.Now.AddMinutes(65)
         };
 
         string url = S3Client.GetPreSignedURL(request);
