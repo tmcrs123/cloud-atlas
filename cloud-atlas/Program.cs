@@ -54,7 +54,7 @@ namespace cloud_atlas
 
                 ddb.ConfigureContext(config =>
                 {
-                    config.TableNamePrefix = "cloud-atlas-demo-";
+                    config.TableNamePrefix = $"cloud-atlas-{builder.Environment.EnvironmentName}-";
                 });
 
                 ddb.WithDynamoDBClient(() => new AmazonDynamoDBClient(RegionEndpoint.USEast1));
